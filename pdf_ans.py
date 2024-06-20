@@ -202,7 +202,7 @@ def save_uploaded_pdf(uploaded_file):
 
 def main():
     st.title("PDF-Answering-AI")
-    st.write("Upload a PDF document")
+    st.write("Click to Upload or Drop PDF here")
 
     # Upload PDF document
     uploaded_file = st.file_uploader("Choose a PDF document", type="pdf")
