@@ -31,7 +31,7 @@ mkdir -p static
 pip install -r requirements.txt
 ```
 
-### Run the Streamlit app:
+#### Run the Streamlit app:
 
 ```bash
 streamlit run pdf_ans.py
