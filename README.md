@@ -1,4 +1,4 @@
-### PDF_Answering_ai
+# PDF_Answering_ai
 
 #### This project enables efficient extraction, preprocessing, and querying of text content from PDF documents. Leveraging various embedding models, the system allows users to upload PDFs, input queries, and retrieve the most relevant text segments through a user-friendly interface.
 
