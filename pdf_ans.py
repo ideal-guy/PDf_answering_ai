@@ -20,24 +20,14 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import streamlit as st
 
-### Preprocess for Skipgram and CBOW
+# Preprocess for Skipgram and CBOW
 def preprocess_text(text):
     text = text.lower()
-#     print("After Lowercasing:", text)
-#     print("\n\n\n\n")
     tokens = word_tokenize(text)
-#     print("After Tokenization:", tokens)
-#     print("\n\n\n\n")
     stop_words = set(stopwords.words('english'))
     tokens = [token for token in tokens if token not in stop_words]
-#     print("After Stopword Removal:", tokens)
-#     print("\n\n\n\n")
     tokens = [token for token in tokens if token not in string.punctuation]
-#     print("After Punctuation Removal:", tokens)
-#     print("\n\n\n\n")
     tokens = [token for token in tokens if not (token.isdigit() or (token[:-1].isdigit() and token[-1] == '.'))]
-#     print("After Number Removal:", tokens)
-#     print("\n\n\n\n")
     lemmatizer = WordNetLemmatizer()
     pos_tags = pos_tag(tokens)
 
@@ -54,12 +44,9 @@ def preprocess_text(text):
             return wordnet.NOUN
 
     lemmatized_tokens = [lemmatizer.lemmatize(token, get_wordnet_pos(pos_tag)) for token, pos_tag in pos_tags]
-#     print("After Lemmatization:", lemmatized_tokens)
     lemmatized_tokens = [token for token in lemmatized_tokens if token] 
     return lemmatized_tokens
 
-
-### Preprocess for Bag of words and Tf-Idf
 def preprocess_alt_text(text):
 
     stop_words = set(stopwords.words('english'))
@@ -91,7 +78,7 @@ def get_wordnet_pos(treebank_tag):
     else:
         return 'n'
 
-### PDF-Text Extraction 
+# PDF-Text Extraction 
 def process_pdf(pdf_path):
     pdf_document = fitz.open(pdf_path)
     preprocessed_text_corpus = []
@@ -107,14 +94,11 @@ def process_pdf(pdf_path):
         preprocessed_page_text = []
         for sentence in sentences:
             preprocessed_sentence = preprocess_text(sentence)
-#             preprocessed_page_text.append(preprocessed_sentence)
             preprocessed_page_text.append((sentence, preprocessed_sentence))
         preprocessed_text_corpus.append(preprocessed_page_text)
-#         print(page_text)
     pdf_document.close()
     return preprocessed_sentence,preprocessed_text_corpus,altt_corpus
 
-### Sentence similarity
 def get_sentence_embedding(sentence_tokens, model):
     word_embeddings = []
     for token in sentence_tokens:
@@ -127,19 +111,8 @@ def get_sentence_embedding(sentence_tokens, model):
     sentence_embedding = sum(word_embeddings) / len(word_embeddings)
     return sentence_embedding
 
-### Finding most Relevant Sentence for Tf-Idf and BOW
-def find_most_relevant_sentences_using_tfidf(question_vector, corpus_vectors, corpus_sentences, top_n=3):
-    top_sentences = []
-    for sentence_vector, original_sentence in zip(corpus_vectors, corpus_sentences):
-        similarity = cosine_similarity(question_vector, sentence_vector)
-        top_sentences.append((original_sentence, similarity))
 
-    top_sentences.sort(key=lambda x: x[1], reverse=True)
-    top_sentences = top_sentences[:top_n]
-
-    return top_sentences
-
-### Finding most Relevant Sentence for Word2Vec Model
+# Finding most Relevant Sentence for Word2Vec Model
 def find_most_relevant_sentences_using_word_embeddings(question, corpus, model, top_n=3):
     preprocessed_question = preprocess_text(question)
     question_embedding = np.zeros((1, model.vector_size))  
@@ -176,27 +149,7 @@ def find_most_relevant_sentences_using_word_embeddings(question, corpus, model, 
     return top_sentences
 
 
-### Finding most Relevant Sentence from Sentence Transformer
-def calculate_similarity_st(sent_embedding1, sent_embedding2):
-    return util.pytorch_cos_sim(sent_embedding1, sent_embedding2)
-
-def find_most_relevant_sentences_using_sentence_transformers(question, corpus, model_sbert, top_n=3):
-    question_embedding = model_sbert.encode([question], convert_to_tensor=True)
-
-    top_sentences = []
-    for sentence_tokens, original_sentence in corpus:
-        sentence = ' '.join(sentence_tokens)
-        sentence_embedding = model_sbert.encode([sentence], convert_to_tensor=True)
-        similarity = calculate_similarity_st(question_embedding, sentence_embedding)
-        top_sentences.append((original_sentence, similarity.item()))
-
-    top_sentences.sort(key=lambda x: x[1], reverse=True)
-    top_sentences = top_sentences[:top_n]
-
-    return top_sentences
-
-
-### Finding most Relevant Sentence for BERT
+# Finding most Relevant Sentence for BERT
 BERT_Model = "bert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(BERT_Model)
 model_bert = AutoModel.from_pretrained(BERT_Model)
@@ -248,8 +201,8 @@ def save_uploaded_pdf(uploaded_file):
 
 
 def main():
-    st.title("Document QA System")
-    st.write("Upload a PDF document and ask a question.")
+    st.title("PDF-Answering-AI")
+    st.write("Upload a PDF document")
 
     # Upload PDF document
     uploaded_file = st.file_uploader("Choose a PDF document", type="pdf")
@@ -267,23 +220,13 @@ def main():
                 corpus.append(tokens)
 
         # Choose embedding model
-        embedding_model = st.selectbox("Choose an Embedding Model", ["Bag of Words", "TF-IDF", "CBOW", "Skip Gram", "GloVe", "FastText", "Sentence Transformer", "BERT"])
+        embedding_model = st.selectbox("Choose an Embedding Model", ["CBOW", "Skip Gram", "GloVe", "FastText","BERT"])
 
         # Ask user question
-        user_question = st.text_input("Enter your question")
+        user_question = st.text_input("Ask your question")
 
         if st.button("Get Answer"):
-            if embedding_model == "Bag of Words":
-                count_vect = CountVectorizer()
-                BOW = count_vect.fit_transform(altt_corpus)
-                question_vector = tr_idf_model.transform([user_question])
-                top_relevant_sentences = find_most_relevant_sentences_using_tfidf(question_vector, BOW, altt_corpus, top_n=3)
-            elif embedding_model == "TF-IDF":
-                tr_idf_model = TfidfVectorizer()
-                tf_idf_vector = tr_idf_model.fit_transform(altt_corpus)
-                question_vector = tr_idf_model.transform([user_question])
-                top_relevant_sentences = find_most_relevant_sentences_using_tfidf(question_vector, tf_idf_vector, altt_corpus, top_n=3)
-            elif embedding_model == "CBOW":
+            if embedding_model == "CBOW":
                 model_cbow = Word2Vec(corpus, min_count=1, vector_size=60, window=2, sg=0)
                 model_cbow.train(corpus, total_examples=len(corpus), epochs=250)
                 top_relevant_sentences = find_most_relevant_sentences_using_word_embeddings(user_question, corpuss, model_cbow, top_n=3)
@@ -299,9 +242,6 @@ def main():
                 model_fast = FastText(sentences=corpus, vector_size=60, window=5, min_count=1, sg=1)
                 model_fast.train(corpus, total_examples=len(corpus), epochs=250)
                 top_relevant_sentences = find_most_relevant_sentences_using_word_embeddings(user_question, corpuss, model_fast, top_n=3)
-            elif embedding_model == "Sentence Transformer":
-                model_sbert = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-                top_relevant_sentences = find_most_relevant_sentences_using_sentence_transformers(user_question, corpuss, model_sbert, top_n=3)
             elif embedding_model == "BERT":
                 top_relevant_sentences = find_most_relevant_sentences_using_bert(user_question, corpuss, model_bert, top_n=3)
             else:
