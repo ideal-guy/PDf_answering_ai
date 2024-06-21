@@ -26,7 +26,7 @@ git clone https://github.com/ideal-guy/PDf_answering_ai.git
 mkdir -p static
 ```
 
-#### Install all Requirements: 
+#### Install the required packages:
 ```bash
 pip install -r requirements.txt
 ```
